@@ -1,4 +1,4 @@
-package NetworkProgramming;
+package main.NetworkProgramming;
 
 import java.io.IOException;
 import java.io.OutputStream;
