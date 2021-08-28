@@ -11,7 +11,7 @@ public class AllHeaders {
 
     for (int i = 0; i < arguments.length; i++) {
       try {
-        URL u = new URL(args[i]);
+        URL u = new URL(arguments[i]);
         URLConnection uc = u.openConnection();
         for (int j = 1; ; j++) {
           String header = uc.getHeaderField(j);
