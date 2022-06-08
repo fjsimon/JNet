@@ -1,4 +1,4 @@
-package main.NetworkProgramming;
+package com.fjsimon.java.network.programming;
 
 import java.io.IOException;
 import java.io.OutputStream;
