@@ -31,7 +31,7 @@ class WriteToFileTests {
 
         String fileName = "bufferedWriter.txt";
 
-        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/resources/" + fileName));
+        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/target/" + fileName));
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(path.toFile()));
 
@@ -46,7 +46,7 @@ class WriteToFileTests {
 
         String fileName = "printWriter.txt";
 
-        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/resources/" + fileName));
+        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/target/" + fileName));
 
         FileWriter fileWriter = new FileWriter(path.toFile());
 
@@ -63,7 +63,7 @@ class WriteToFileTests {
         String str = "Hello";
         String fileName = "fileOutputStream.txt";
 
-        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/resources/" + fileName));
+        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/target/" + fileName));
 
         FileOutputStream outputStream = new FileOutputStream(path.toFile());
 
@@ -79,7 +79,7 @@ class WriteToFileTests {
         String value = "Hello";
         String fileName = "dataOutputStream.txt";
 
-        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/resources/" + fileName));
+        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/target/" + fileName));
 
         FileOutputStream fos = new FileOutputStream(path.toFile());
 
@@ -101,7 +101,7 @@ class WriteToFileTests {
 
     private void writeToPosition(String filename, int data, long position) throws IOException {
 
-        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/resources/" + filename));
+        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/target/" + filename));
 
         RandomAccessFile writer = new RandomAccessFile(path.toFile(), "rw");
         writer.seek(position);
@@ -112,7 +112,7 @@ class WriteToFileTests {
     private int readFromPosition(String filename, long position) throws IOException {
         int result = 0;
 
-        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/resources/" + filename));
+        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/target/" + filename));
 
         RandomAccessFile reader = new RandomAccessFile(path.toFile(), "r");
         reader.seek(position);
@@ -141,7 +141,7 @@ class WriteToFileTests {
 
         String fileName = "fileChannel.txt";
 
-        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/resources/" + fileName));
+        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/target/" + fileName));
 
         RandomAccessFile stream = new RandomAccessFile(path.toFile(), "rw");
 
@@ -169,7 +169,7 @@ class WriteToFileTests {
 
         String fileName = "pathFiles.txt";
 
-        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/resources/" + fileName));
+        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/target/" + fileName));
 
         byte[] strToBytes = str.getBytes();
 
@@ -200,7 +200,7 @@ class WriteToFileTests {
 
         String fileName = "pathFiles.txt";
 
-        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/resources/" + fileName));
+        Path path = Paths.get(URI.create("file://" + System.getProperty("user.dir") +"/target/" + fileName));
 
         RandomAccessFile stream = new RandomAccessFile(path.toFile(), "rw");
 
