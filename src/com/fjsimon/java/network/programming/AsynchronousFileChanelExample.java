@@ -15,7 +15,7 @@ public class AsynchronousFileChanelExample {
     public static void readFileFuture(String fileName) throws Exception {
 
         Path path = Paths.get(URI.create("file://" +
-                System.getProperty("user.dir") +"/resources/" + fileName));
+                System.getProperty("user.dir") + "/resources/" + fileName));
 
         AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(
                 path, StandardOpenOption.READ);
@@ -37,7 +37,7 @@ public class AsynchronousFileChanelExample {
 
         String fileName = "test.txt";
         Path path = Paths.get(URI.create("file://" +
-                System.getProperty("user.dir") +"/resources/"+fileName));
+                System.getProperty("user.dir") + "/resources/" + fileName));
 
         AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(
                 path, StandardOpenOption.WRITE, StandardOpenOption.CREATE);

@@ -18,7 +18,7 @@ public class AddressTests {
             System.out.printf("IP Address %s%n", ip.getHostAddress());
             System.out.printf("Version %s%n", getVersion(ip));
 
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
