@@ -12,13 +12,26 @@ public class AddressTests {
     }
 
     public static void main(String[] args) {
-        try {
-            InetAddress ip = InetAddress.getByName("www.google.co.uk");
-            System.out.printf("Host Name %s%n", ip.getHostName());
-            System.out.printf("IP Address %s%n", ip.getHostAddress());
-            System.out.printf("Version %s%n", getVersion(ip));
 
-        } catch (Exception e) {
+        try {
+            InetAddress address = InetAddress.getLocalHost();
+            System.out.printf("Localhost: %s Version: %d \n", address, getVersion(address));
+
+            address = InetAddress.getByName("www.google.co.uk");
+            System.out.println(address);
+            System.out.println("Host Address : " + address.getHostAddress());
+            System.out.println("Host Name : " + address.getHostName());
+            System.out.println("Canonical Hostname: " + address.getCanonicalHostName());
+
+            InetAddress[] addresses = InetAddress.getAllByName("www.google.co.uk");
+            for (InetAddress addr : addresses) {
+                System.out.println(addr);
+            }
+
+            address = InetAddress.getLoopbackAddress();
+            System.out.println("Loopback Address: " + address);
+
+        } catch (UnknownHostException e) {
             e.printStackTrace();
         }
     }
