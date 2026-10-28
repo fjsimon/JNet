@@ -6,7 +6,7 @@ import java.util.List;
 /** Command-line options, mirroring sniffnet's CLI surface. */
 public final class ClientOptions {
 
-    public static final String VERSION = "1.0.0";
+    public static final String VERSION = "0.0.1-SNAPSHOT";
 
     public String adapter;
     public boolean listAdapters;
@@ -22,7 +22,7 @@ public final class ClientOptions {
 
     public static String usage() {
         return """
-                Usage: java -jar jn3t.jar [OPTIONS]
+                Usage: [sudo] java -jar jn3t.jar [OPTIONS]
 
                 Comfortably monitor your network traffic from the terminal.
                 (Java port of the sniffnet core: https://github.com/GyulyVGC/sniffnet)
