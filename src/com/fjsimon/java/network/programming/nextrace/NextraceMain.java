@@ -110,7 +110,7 @@ public final class NextraceMain {
             } catch (InterruptedException e) {
                 return;
             }
-            if (engine.isRunning() && tracker.snapshot().totalPackets == 0) {
+            if (engine.isRunning() && tracker.snapshot().getTotalPackets() == 0) {
                 System.err.println();
                 System.err.println("WARNING: no packets captured after 5 seconds.");
                 System.err.println("  Possible causes:");
