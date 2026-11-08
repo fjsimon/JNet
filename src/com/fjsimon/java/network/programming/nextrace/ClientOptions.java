@@ -42,7 +42,7 @@ public final class ClientOptions {
                   -h, --help             print this help and exit
                   -v, --version          print the version and exit
 
-                In the TUI:
+                In the Terminal:
                   q  quit      p / space  pause  c  export CSV report
                 """;
     }
