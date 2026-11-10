@@ -124,10 +124,73 @@ public final class NextraceMain {
         diag.setDaemon(true);
         diag.start();
 
+        if (opts.summary || System.console() == null) {
+            runSummary(opts, engine, tracker, deviceLabel);
+        } else {
+            new Terminal(tracker, deviceLabel).run();
+        }
 
+        if (opts.outputCsv != null && !opts.outputCsv.isBlank()) {
+            writeReports(opts.outputCsv, tracker);
+        }
+        if (!opts.summary && System.console() != null) {
+            Report.printSummary(tracker.snapshot(), deviceLabel);
+        }
 
         engine.stop();
         geo.shutdown();
+    }
+
+    private static void runSummary(
+            ClientOptions opts, CaptureEngine engine, ConnectionTracker tracker, String deviceLabel) {
+        if (engine.isOffline()) {
+            engine.waitForEnd();
+            System.out.println();
+            Report.printSummary(tracker.snapshot(), deviceLabel);
+        } else {
+            System.out.println("sniffing on " + deviceLabel
+                    + " — press Ctrl-C to stop");
+            System.out.println();
+            while (!engine.isFinished()) {
+                sleepQuietly(2000);
+                var snap = tracker.snapshot();
+                long[] rates = lastRates(snap);
+                System.out.printf(
+                        "  %s  packets=%,d  bytes=%s  rx=%s/s  tx=%s/s  dropped=%d%n",
+                        java.time.LocalTime.now().withNano(0),
+                        snap.getTotalPackets(),
+                        Format.bytes(snap.getTotalBytes()),
+                        Format.bitsPerSec(rates[0]),
+                        Format.bitsPerSec(rates[1]),
+                        snap.getDroppedPackets());
+                System.out.flush();
+            }
+            System.out.println();
+            Report.printSummary(tracker.snapshot(), deviceLabel);
+        }
+    }
+
+    private static long[] lastRates(Snapshot snapshot) {
+        var buckets = snapshot.getBuckets();
+        int n = buckets.size();
+        int start = Math.max(0, n - 3);
+        int count = n - start;
+        long rx = 0;
+        long tx = 0;
+        for (int i = start; i < n; i++) {
+            rx += buckets.get(i).rxBytes;
+            tx += buckets.get(i).txBytes;
+        }
+        return new long[]{count == 0 ? 0 : rx / count, count == 0 ? 0 : tx / count};
+    }
+
+    private static void writeReports(String csvPath, ConnectionTracker tracker) throws Exception {
+        String hostPath = csvPath.endsWith(".csv")
+                ? csvPath.substring(0, csvPath.length() - 4) + "-hosts.csv"
+                : csvPath + "-hosts.csv";
+        Report.writeConnections(csvPath, tracker.snapshot());
+        Report.writeHosts(hostPath, tracker.snapshot());
+        System.out.println("wrote " + csvPath + " and " + hostPath);
     }
 
     private static void checkPermissions(String deviceName) {
@@ -194,5 +257,13 @@ public final class NextraceMain {
                     dir.resolve("GeoLite2-Country.mmdb").toFile());
         }
         return GeoLookup.fromClasspath();
+    }
+
+    private static void sleepQuietly(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
