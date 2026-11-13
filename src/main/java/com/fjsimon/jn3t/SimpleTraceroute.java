@@ -1,4 +1,4 @@
-package com.fjsimon.java.network.programming;
+package main.java.com.fjsimon.jn3t;
 
 import org.pcap4j.core.*;
 import org.pcap4j.packet.*;
@@ -51,7 +51,7 @@ public class SimpleTraceroute {
         // Create the Ethernet Layer (Wrapper around IPv4)
         EthernetPacket.Builder etherBuilder = new EthernetPacket.Builder()
                 .srcAddr(getLocalHostMacAddress())
-                .dstAddr("getewayMacAddress")
+                .dstAddr(MacAddress.getByName("c0:05:c2:b0:5f:c8"))
                 .type(EtherType.IPV4)
                 .payloadBuilder(ipv4Builder)
                 .paddingAtBuild(true);

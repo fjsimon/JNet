@@ -1,4 +1,4 @@
-package com.fjsimon.java.network.programming;
+package main.java.com.fjsimon.jn3t;
 
 import org.pcap4j.core.*;
 import org.pcap4j.packet.*;
@@ -10,7 +10,6 @@ import java.io.EOFException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Map;
 import java.util.concurrent.*;
 
 /**
@@ -20,16 +19,13 @@ import java.util.concurrent.*;
  * Each router on the path replies with an ICMP Time Exceeded message embedding
  * the original probe, letting us both identify the hop and its RTT.
  */
-public class TraceroutePCAP4Jv4 implements Closeable {
+public class TraceroutePCAP4Jv2 implements Closeable {
 
     private static final int SNAPLEN = 65536;
-    private static final int READ_TIMEOUT_MS = 100;
+    private static final int OPEN_TIMEOUT_MS = 3000;
     private static final int MAX_HOPS = 30;
-    private static final int PROBES_PER_HOP = 3;
-    private static final long REPLY_WAIT_MS = 100;
+    private static final long REPLY_WAIT_MS = 2000;
     private static final short IDENTIFIER = (short) 1;
-
-    private final Map<String, String> reverseCache = new ConcurrentHashMap<>();
 
     private final PcapHandle handle;
     private final Inet4Address source;
@@ -41,7 +37,7 @@ public class TraceroutePCAP4Jv4 implements Closeable {
     private ExecutorService capturePool;
     private Future<?> captureFuture;
 
-    private TraceroutePCAP4Jv4(PcapHandle handle, Inet4Address source, Inet4Address target,
+    private TraceroutePCAP4Jv2(PcapHandle handle, Inet4Address source, Inet4Address target,
                                MacAddress localMac, MacAddress gatewayMac) {
         this.handle = handle;
         this.source = source;
@@ -74,8 +70,8 @@ public class TraceroutePCAP4Jv4 implements Closeable {
 
         MacAddress gatewayMac = resolveGatewayMac(ifInfo.nif);
 
-        try (TraceroutePCAP4Jv4 traceroute = new TraceroutePCAP4Jv4(
-                ifInfo.nif.openLive(SNAPLEN, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, READ_TIMEOUT_MS),
+        try (TraceroutePCAP4Jv2 traceroute = new TraceroutePCAP4Jv2(
+                ifInfo.nif.openLive(SNAPLEN, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, OPEN_TIMEOUT_MS),
                 ifInfo.source,
                 target,
                 ifInfo.localMac,
@@ -96,75 +92,21 @@ public class TraceroutePCAP4Jv4 implements Closeable {
             System.out.println("Starting traceroute probes...\n");
 
             for (int ttl = 1; ttl <= MAX_HOPS; ttl++) {
-                Inet4Address responder = null;
-                boolean destReached = false;
+                long sendTime = System.nanoTime();
+                sendProbe(ttl);
 
-                long[] sendTimes = new long[PROBES_PER_HOP];
-                for (int probe = 0; probe < PROBES_PER_HOP; probe++) {
-                    sendTimes[probe] = System.nanoTime();
-                    sendProbe(ttl, probe);
-                }
-
-                Long[] rtts = new Long[PROBES_PER_HOP];
-                long deadline = System.currentTimeMillis() + REPLY_WAIT_MS;
-
-                while (true) {
-                    long remaining = deadline - System.currentTimeMillis();
-                    if (remaining <= 0) {
-                        break;
-                    }
-
-                    boolean allReceived = true;
-                    for (Long rtt : rtts) {
-                        if (rtt == null) {
-                            allReceived = false;
-                            break;
-                        }
-                    }
-                    if (allReceived) {
-                        break;
-                    }
-
-                    Packet packet = received.poll(remaining, TimeUnit.MILLISECONDS);
-                    if (packet == null) {
-                        break;
-                    }
-
-                    ReplyResult result = classify(packet, ttl);
-                    if (result != null) {
-                        if (rtts[result.probe] == null) {
-                            rtts[result.probe] = (System.nanoTime() - sendTimes[result.probe]) / 1_000_000;
-                        }
-                        if (responder == null) {
-                            responder = result.replyIp;
-                        }
-                        if (result.isDestination) {
-                            destReached = true;
-                        }
-                    }
-                }
-
-                if (responder == null) {
+                ReplyResult result = waitForReply(ttl, sendTime);
+                if (result == null) {
                     System.out.printf("%2d  * * *%n", ttl);
                 } else {
-                    StringBuilder line = new StringBuilder(String.format("%2d  %s (%s)",
-                            ttl, resolveHostName(responder), responder.getHostAddress()));
-                    for (int probe = 0; probe < PROBES_PER_HOP; probe++) {
-                        Long rtt = rtts[probe];
-                        line.append(rtt == null
-                                ? "  *"
-                                : String.format("  %.3f ms", rtt / 1000.0));
+                    System.out.printf("%2d  %4d ms  %s%n", ttl, result.rttMs, result.replyIp.getHostAddress());
+                    if (result.isDestination) {
+                        System.out.println();
+                        System.out.println("Destination reached!");
+                        return;
                     }
-                    System.out.println(line);
-                }
-
-                if (destReached) {
-                    System.out.println();
-                    System.out.println("Destination reached: " + target.getHostAddress());
-                    return;
                 }
             }
-
             System.out.println();
             System.out.println("Destination not reached within " + MAX_HOPS + " hops.");
         } finally {
@@ -217,10 +159,10 @@ public class TraceroutePCAP4Jv4 implements Closeable {
         }
     }
 
-    private void sendProbe(int ttl, int probe) throws Exception {
+    private void sendProbe(int ttl) throws Exception {
         IcmpV4EchoPacket.Builder echoBuilder = new IcmpV4EchoPacket.Builder()
                 .identifier(IDENTIFIER)
-                .sequenceNumber((short) (ttl * PROBES_PER_HOP + probe))
+                .sequenceNumber((short) ttl)
                 .payloadBuilder(new UnknownPacket.Builder().rawData(new byte[32]));
 
         // Note: checksums are delegated so ICMP carries the same ID/sequence we match on.
@@ -249,33 +191,38 @@ public class TraceroutePCAP4Jv4 implements Closeable {
                 .payloadBuilder(ipv4Builder)
                 .paddingAtBuild(true);
 
+        System.out.println("  -> TTL=" + ttl + " probe sent");
         handle.sendPacket(etherBuilder.build());
     }
 
-    /**
-     * Reverse-resolves a hop IP to a hostname, like `traceroute` does in the "(ip)"
-     * column. Uses a cache so each unique IP is resolved at most once.
-     */
-    private String resolveHostName(Inet4Address addr) {
-        String ip = addr.getHostAddress();
-        return reverseCache.computeIfAbsent(ip, key -> {
-            try {
-                String host = InetAddress.getByName(key).getHostName();
-                if (host != null && !host.equalsIgnoreCase(key)) {
-                    return host;
-                }
-            } catch (UnknownHostException ignored) {
-                // no reverse name; fall back to the literal IP
+    private ReplyResult waitForReply(int ttl, long sendTime) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + REPLY_WAIT_MS;
+
+        while (true) {
+            long remaining = deadline - System.currentTimeMillis();
+            if (remaining <= 0) {
+                return null;
             }
-            return key;
-        });
+
+            Packet packet = received.poll(remaining, TimeUnit.MILLISECONDS);
+            if (packet == null) {
+                return null;
+            }
+
+            ReplyResult result = classify(packet, ttl, sendTime);
+            if (result != null) {
+                return result;
+            }
+        }
     }
 
-    private ReplyResult classify(Packet frame, int ttl) {
-        IpV4Packet ip = frame.get(IpV4Packet.class);
-        if (ip == null) {
-            ip = toIpv4(frame);
-        }
+    /**
+     * Decodes a captured frame into a usable traceroute result.
+     * Only ICMPv4 replies that embed our own probe (matching identifier/sequence)
+     * are accepted, so unrelated network noise is ignored.
+     */
+    private ReplyResult classify(Packet frame, int ttl, long sendTime) {
+        IpV4Packet ip = toIpv4(frame);
         if (ip == null) {
             return null;
         }
@@ -286,26 +233,22 @@ public class TraceroutePCAP4Jv4 implements Closeable {
         }
 
         ProbeInfo probe = findProbe(icmp);
-        if (probe == null || probe.identifier != IDENTIFIER) {
-            return null;
-        }
-
-        int probeIndex = probe.sequence - ttl * PROBES_PER_HOP;
-        if (probeIndex < 0 || probeIndex >= PROBES_PER_HOP) {
+        if (probe == null || probe.identifier != IDENTIFIER || probe.sequence != ttl) {
             return null;
         }
 
         Inet4Address responder = ip.getHeader().getSrcAddr();
+        long rttMs = (System.nanoTime() - sendTime) / 1_000_000;
         IcmpV4Type type = icmp.getHeader().getType();
 
         if (type == IcmpV4Type.TIME_EXCEEDED) {
-            return new ReplyResult(responder, probeIndex, false);
+            return new ReplyResult(responder, rttMs, false);
         }
         if (type == IcmpV4Type.DESTINATION_UNREACHABLE) {
-            return new ReplyResult(responder, probeIndex, true);
+            return new ReplyResult(responder, rttMs, true);
         }
         if (type == IcmpV4Type.ECHO_REPLY) {
-            return new ReplyResult(responder, probeIndex, true);
+            return new ReplyResult(responder, rttMs, true);
         }
         return null;
     }
@@ -352,7 +295,7 @@ public class TraceroutePCAP4Jv4 implements Closeable {
     }
 
     private void setCaptureFilter() {
-        String filter = "icmp and dst host " + source.getHostAddress();
+        String filter = "icmp";
         try {
             handle.setFilter(filter, BpfProgram.BpfCompileMode.OPTIMIZE);
         } catch (Exception e) {
@@ -422,7 +365,7 @@ public class TraceroutePCAP4Jv4 implements Closeable {
         System.out.print("Resolving gateway MAC... ");
         MacAddress mac = MacAddress.ETHER_BROADCAST_ADDRESS;
         try (PcapHandle probeHandle = nif.openLive(SNAPLEN,
-                PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, READ_TIMEOUT_MS)) {
+                PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, OPEN_TIMEOUT_MS)) {
             MacAddress resolved = GatewayMacResolver.resolve(nif, probeHandle);
             if (resolved != null && !resolved.equals(MacAddress.ETHER_BROADCAST_ADDRESS)) {
                 mac = resolved;
@@ -450,12 +393,12 @@ public class TraceroutePCAP4Jv4 implements Closeable {
 
     private static final class ReplyResult {
         final Inet4Address replyIp;
-        final int probe;
+        final long rttMs;
         final boolean isDestination;
 
-        ReplyResult(Inet4Address replyIp, int probe, boolean isDestination) {
+        ReplyResult(Inet4Address replyIp, long rttMs, boolean isDestination) {
             this.replyIp = replyIp;
-            this.probe = probe;
+            this.rttMs = rttMs;
             this.isDestination = isDestination;
         }
     }

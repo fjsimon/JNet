@@ -1,8 +1,7 @@
-package com.fjsimon.java.network.programming;
+package main.java.com.fjsimon.jn3t;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
 
 public class Traceroute {
 

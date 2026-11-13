@@ -1,4 +1,4 @@
-package com.fjsimon.java.network.programming;
+package main.java.com.fjsimon.jn3t;
 
 import org.pcap4j.core.*;
 import org.pcap4j.packet.*;

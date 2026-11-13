@@ -1,4 +1,4 @@
-package com.fjsimon.java.network.programming;
+package main.java.com.fjsimon.jn3t;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

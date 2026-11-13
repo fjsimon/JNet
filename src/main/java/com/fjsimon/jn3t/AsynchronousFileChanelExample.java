@@ -1,4 +1,4 @@
-package com.fjsimon.java.network.programming;
+package main.java.com.fjsimon.jn3t;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -6,7 +6,6 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.UUID;
 import java.util.concurrent.Future;
 
 public class AsynchronousFileChanelExample {
