@@ -8,12 +8,17 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.commons.lang3.AutoCloseables.closeQuietly;
 
 /**
  * Asynchronous ASN / country enrichment backed by MaxMind GeoLite2 databases.
  * Uses the same GeoLite2-ASN.mmdb and GeoLite2-Country.mmdb files sniffnet ships.
  */
-public final class GeoLookup implements HostEnricher {
+public final class GeoLookup implements HostEnricher, AutoCloseable {
+
+    private static final long SHUTDOWN_TIMEOUT_SECONDS = 5;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "geo-lookup");
@@ -133,6 +138,30 @@ public final class GeoLookup implements HostEnricher {
                 countryReader.close();
             } catch (IOException ignored) {
             }
+        }
+    }
+
+    @Override
+    public void close() throws Exception {
+        executor.shutdown();
+
+        try {
+            if (!executor.awaitTermination(
+                    SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+
+                executor.shutdownNow();
+
+                // Wait for interrupted tasks to finish before closing readers.
+                executor.awaitTermination(
+                        SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS
+                );
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        } finally {
+            closeQuietly(asnReader);
+            closeQuietly(countryReader);
         }
     }
 }
