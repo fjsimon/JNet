@@ -1,4 +1,4 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.model;
 
 import java.net.InetAddress;
 
@@ -22,7 +22,7 @@ public final class Connection {
     public long firstTimestampMicros;
     public long lastTimestampMicros;
 
-    Connection(ConnectionKey key, TrafficDirection direction, String service) {
+    public Connection(ConnectionKey key, TrafficDirection direction, String service) {
         this.key = key;
         this.localIp = key.localIp();
         this.localPort = key.localPort();

@@ -1,5 +1,7 @@
 package main.java.com.fjsimon.jn3t.nextrace;
 
+import main.java.com.fjsimon.jn3t.nextrace.model.Protocol;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;

@@ -1,5 +1,7 @@
 package main.java.com.fjsimon.jn3t.nextrace;
 
+import main.java.com.fjsimon.jn3t.nextrace.model.*;
+
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;

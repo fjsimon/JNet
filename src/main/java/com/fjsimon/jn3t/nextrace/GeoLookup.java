@@ -1,6 +1,7 @@
 package main.java.com.fjsimon.jn3t.nextrace;
 
 import com.maxmind.db.Reader;
+import main.java.com.fjsimon.jn3t.nextrace.model.HostStat;
 
 import java.io.File;
 import java.io.IOException;

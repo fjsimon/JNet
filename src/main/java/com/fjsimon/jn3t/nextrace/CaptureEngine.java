@@ -6,6 +6,9 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import main.java.com.fjsimon.jn3t.nextrace.model.AdapterInfo;
+import main.java.com.fjsimon.jn3t.nextrace.model.ParsedPacket;
 import org.pcap4j.core.BpfProgram;
 import org.pcap4j.core.PcapDumper;
 import org.pcap4j.core.PcapAddress;

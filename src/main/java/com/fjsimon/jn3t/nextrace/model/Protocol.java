@@ -1,4 +1,4 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.model;
 
 /** Upper layer protocols tracked by the application (mirrors sniffnet's Protocol). */
 public enum Protocol {

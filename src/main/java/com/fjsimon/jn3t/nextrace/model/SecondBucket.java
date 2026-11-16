@@ -1,4 +1,4 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.model;
 
 /** Per-second traffic bucket used for the real-time intensity chart. */
 public final class SecondBucket {

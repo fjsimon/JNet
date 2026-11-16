@@ -1,5 +1,8 @@
 package main.java.com.fjsimon.jn3t.nextrace;
 
+import main.java.com.fjsimon.jn3t.nextrace.model.ParsedPacket;
+import main.java.com.fjsimon.jn3t.nextrace.model.Protocol;
+
 import java.net.InetAddress;
 import java.util.Arrays;
 

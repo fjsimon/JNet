@@ -1,5 +1,10 @@
 package main.java.com.fjsimon.jn3t.nextrace;
 
+import main.java.com.fjsimon.jn3t.nextrace.model.Connection;
+import main.java.com.fjsimon.jn3t.nextrace.model.HostStat;
+import main.java.com.fjsimon.jn3t.nextrace.model.Protocol;
+import main.java.com.fjsimon.jn3t.nextrace.model.Snapshot;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;

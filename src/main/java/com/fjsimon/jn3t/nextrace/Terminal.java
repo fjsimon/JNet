@@ -1,5 +1,7 @@
 package main.java.com.fjsimon.jn3t.nextrace;
 
+import main.java.com.fjsimon.jn3t.nextrace.model.*;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;

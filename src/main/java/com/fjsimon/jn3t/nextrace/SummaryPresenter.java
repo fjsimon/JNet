@@ -1,5 +1,7 @@
 package main.java.com.fjsimon.jn3t.nextrace;
 
+import main.java.com.fjsimon.jn3t.nextrace.model.Snapshot;
+
 public final class SummaryPresenter implements CapturePresenter {
 
     @Override
