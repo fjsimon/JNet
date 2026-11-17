@@ -1,5 +1,6 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.capture;
 
+import main.java.com.fjsimon.jn3t.nextrace.ClientOptions;
 import org.apache.commons.lang3.StringUtils;
 
 public final class CaptureEngineFactory {

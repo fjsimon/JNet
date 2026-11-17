@@ -1,4 +1,6 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.capture;
+
+import main.java.com.fjsimon.jn3t.nextrace.ConnectionTracker;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

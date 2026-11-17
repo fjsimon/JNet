@@ -1,4 +1,4 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.capture;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import main.java.com.fjsimon.jn3t.nextrace.model.AdapterInfo;
 import main.java.com.fjsimon.jn3t.nextrace.model.ParsedPacket;
 import org.pcap4j.core.BpfProgram;
 import org.pcap4j.core.PcapDumper;

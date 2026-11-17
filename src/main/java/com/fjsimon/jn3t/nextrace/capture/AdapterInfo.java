@@ -1,4 +1,4 @@
-package main.java.com.fjsimon.jn3t.nextrace.model;
+package main.java.com.fjsimon.jn3t.nextrace.capture;
 
 import java.net.InetAddress;
 import java.util.ArrayList;

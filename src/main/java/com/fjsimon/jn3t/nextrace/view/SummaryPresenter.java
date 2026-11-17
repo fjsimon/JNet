@@ -1,8 +1,13 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.view;
 
+import main.java.com.fjsimon.jn3t.nextrace.ClientOptions;
+import main.java.com.fjsimon.jn3t.nextrace.ConnectionTracker;
+import main.java.com.fjsimon.jn3t.nextrace.Format;
+import main.java.com.fjsimon.jn3t.nextrace.Report;
+import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureEngine;
 import main.java.com.fjsimon.jn3t.nextrace.model.Snapshot;
 
-public final class SummaryPresenter implements CapturePresenter {
+public final class SummaryPresenter implements Presenter {
 
     @Override
     public void display(

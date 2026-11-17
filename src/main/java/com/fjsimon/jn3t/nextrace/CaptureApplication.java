@@ -1,5 +1,9 @@
 package main.java.com.fjsimon.jn3t.nextrace;
 
+import main.java.com.fjsimon.jn3t.nextrace.capture.*;
+import main.java.com.fjsimon.jn3t.nextrace.view.PresenterFactory;
+import main.java.com.fjsimon.jn3t.nextrace.view.Presenter;
+
 import java.nio.file.Path;
 import java.util.HashSet;
 
@@ -36,8 +40,8 @@ public final class CaptureApplication {
 
                 session.start(tracker);
 
-                CapturePresenter presenter =
-                        CapturePresenterFactory.create(opts);
+                Presenter presenter =
+                        PresenterFactory.create(opts);
 
                 presenter.display(
                         opts,
