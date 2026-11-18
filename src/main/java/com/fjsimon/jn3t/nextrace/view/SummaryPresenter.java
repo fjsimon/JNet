@@ -11,16 +11,15 @@ public final class SummaryPresenter implements Presenter {
 
     @Override
     public void display(
-            ClientOptions opts,
             CaptureEngine engine,
             ConnectionTracker tracker,
             String deviceLabel) {
 
-        runSummary(opts, engine, tracker, deviceLabel);
+        runSummary(engine, tracker, deviceLabel);
     }
 
     private static void runSummary(
-            ClientOptions opts, CaptureEngine engine, ConnectionTracker tracker, String deviceLabel) {
+            CaptureEngine engine, ConnectionTracker tracker, String deviceLabel) {
         if (engine.isOffline()) {
             engine.waitForEnd();
             System.out.println();

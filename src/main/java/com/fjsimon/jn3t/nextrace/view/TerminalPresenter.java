@@ -8,7 +8,6 @@ public final class TerminalPresenter implements Presenter {
 
     @Override
     public void display(
-            ClientOptions opts,
             CaptureEngine engine,
             ConnectionTracker tracker,
             String deviceLabel) {

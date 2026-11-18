@@ -1,6 +1,9 @@
 package main.java.com.fjsimon.jn3t.nextrace;
 
-import main.java.com.fjsimon.jn3t.nextrace.capture.*;
+import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureEngine;
+import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureEngineFactory;
+import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureMonitor;
+import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureSession;
 import main.java.com.fjsimon.jn3t.nextrace.view.PresenterFactory;
 import main.java.com.fjsimon.jn3t.nextrace.view.Presenter;
 
@@ -44,7 +47,6 @@ public final class CaptureApplication {
                         PresenterFactory.create(opts);
 
                 presenter.display(
-                        opts,
                         engine,
                         tracker,
                         session.deviceLabel()
