@@ -4,8 +4,8 @@ import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureEngine;
 import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureEngineFactory;
 import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureMonitor;
 import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureSession;
-import main.java.com.fjsimon.jn3t.nextrace.view.PresenterFactory;
-import main.java.com.fjsimon.jn3t.nextrace.view.Presenter;
+import main.java.com.fjsimon.jn3t.nextrace.view.CaptureViewFactory;
+import main.java.com.fjsimon.jn3t.nextrace.view.CaptureView;
 
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -43,10 +43,10 @@ public final class CaptureApplication {
 
                 session.start(tracker);
 
-                Presenter presenter =
-                        PresenterFactory.create(opts);
+                CaptureView captureView =
+                        CaptureViewFactory.create(opts);
 
-                presenter.display(
+                captureView.render(
                         engine,
                         tracker,
                         session.deviceLabel()
