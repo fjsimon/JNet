@@ -5,12 +5,17 @@ import main.java.com.fjsimon.jn3t.nextrace.Format;
 import main.java.com.fjsimon.jn3t.nextrace.Report;
 import main.java.com.fjsimon.jn3t.nextrace.model.*;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -36,10 +41,13 @@ public final class Terminal {
     private static final String SHOW_CURSOR = ESC + "?25h";
     private static final String ALT_SCREEN_ON = ESC + "?1049h";
     private static final String ALT_SCREEN_OFF = ESC + "?1049l";
+    
+    private static final long FRAME_INTERVAL_MS = 400;
 
     private final ConnectionTracker tracker;
     private final String deviceLabel;
     private final AtomicBoolean running = new AtomicBoolean(true);
+    private final CountDownLatch stopped = new CountDownLatch(1);
     private volatile String statusMessage = "";
 
     public Terminal(ConnectionTracker tracker, String deviceLabel) {
@@ -49,27 +57,46 @@ public final class Terminal {
 
     public void run() {
         setupTerminal();
-        Thread input = new Thread(this::inputLoop, "tui-input");
+        Thread input = new Thread(this::inputLoop, "terminal-input");
         input.setDaemon(true);
         input.start();
+
+        ScheduledExecutorService renderer = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "terminal-render");
+            t.setDaemon(true);
+            return t;
+        });
+
         try {
-            while (running.get()) {
-                int[] sz = terminalSize();
-                int cols = sz[0], rows = sz[1];
-                StringBuilder sb = new StringBuilder(cols * rows * 2);
-                sb.append(HOME);
-                render(sb, cols, rows);
-                sb.append(CLEAR_BELOW);
-                System.out.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-                System.out.flush();
-                Thread.sleep(400);
-            }
+            renderer.scheduleWithFixedDelay(this::renderFrame, 0, FRAME_INTERVAL_MS, TimeUnit.MILLISECONDS);
+            stopped.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            System.err.println("TUI error: " + e.getMessage());
         } finally {
+            running.set(false);
+            renderer.shutdownNow();
             cleanupTerminal();
+        }
+    }
+
+    private void renderFrame() {
+        if (!running.get()) {
+            stopped.countDown();
+            return;
+        }
+        try {
+            int[] sz = terminalSize();
+            int cols = sz[0], rows = sz[1];
+            StringBuilder sb = new StringBuilder(cols * rows * 2);
+            sb.append(HOME);
+            render(sb, cols, rows);
+            sb.append(CLEAR_BELOW);
+            System.out.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+            System.out.flush();
+        } catch (Exception e) {
+            System.err.println("Terminal error: " + e.getMessage());
+            running.set(false);
+            stopped.countDown();
         }
     }
 
@@ -116,34 +143,36 @@ public final class Terminal {
     // ── input ──────────────────────────────────────────────────────────
 
     private void inputLoop() {
-        while (running.get()) {
-            try {
-                if (System.in.available() > 0) {
-                    int c = System.in.read();
-                    switch (c) {
-                        case 'q': case 'x':
-                            running.set(false);
-                            break;
-                        case 'p': case ' ':
-                            boolean paused = !tracker.isPaused();
-                            tracker.setPaused(paused);
-                            statusMessage = paused ? "PAUSED" : "";
-                            break;
-                        case 'c':
-                            exportCsv();
-                            break;
-                        case 27: // ESC
-                            running.set(false);
-                            break;
-                        default:
-                            break;
-                    }
-                } else {
-                    Thread.sleep(40);
+        try {
+            while (running.get()) {
+                int c = System.in.read();
+                if (c < 0) { // stdin closed
+                    running.set(false);
+                    break;
                 }
-            } catch (Exception e) {
-                running.set(false);
+                switch (c) {
+                    case 'q': case 'x':
+                        running.set(false);
+                        break;
+                    case 'p': case ' ':
+                        boolean paused = !tracker.isPaused();
+                        tracker.setPaused(paused);
+                        statusMessage = paused ? "PAUSED" : "";
+                        break;
+                    case 'c':
+                        exportCsv();
+                        break;
+                    case 27: // ESC
+                        running.set(false);
+                        break;
+                    default:
+                        break;
+                }
             }
+        } catch (IOException e) {
+            running.set(false);
+        } finally {
+            stopped.countDown();
         }
     }
 
