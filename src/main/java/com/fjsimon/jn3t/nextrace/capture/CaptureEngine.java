@@ -6,6 +6,9 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import main.java.com.fjsimon.jn3t.nextrace.model.ParsedPacket;
 import org.pcap4j.core.BpfProgram;
@@ -27,6 +30,7 @@ public final class CaptureEngine {
 
     public static final int SNAP_LEN = 65535;
     private static final int LIVE_TIMEOUT_MS = 200;
+    private static final int ERROR_BACKOFF_MS = 100;
 
     /** Consumer invoked for every parsed packet. */
     public interface PacketConsumer {
@@ -41,7 +45,8 @@ public final class CaptureEngine {
 
     private volatile boolean running;
     private volatile boolean finished;
-    private Thread thread;
+    private volatile Thread thread;
+    private final CountDownLatch endLatch = new CountDownLatch(1);
     private String lastError;
 
     private CaptureEngine(
@@ -166,29 +171,34 @@ public final class CaptureEngine {
     /** Ask the capture thread to stop as soon as possible. */
     public void stop() {
         running = false;
+        endLatch.countDown();
     }
 
-    /** Block until an offline capture reaches EOF. */
+    /** Block until an offline capture reaches EOF or the engine is stopped. */
     public void waitForEnd() {
-        if (!offline) {
+        if (!offline || thread == null) {
             return;
         }
-        while (!finished && running) {
-            try {
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
+        try {
+            endLatch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
+    }
+
+    /** Wait up to the given timeout for the capture thread to terminate. */
+    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+        Thread t = thread;
+        if (t == null) {
+            return true;
+        }
+        t.join(unit.toMillis(timeout));
+        return !t.isAlive();
     }
 
     private void captureLoop(PacketConsumer consumer) {
         boolean debug = "true".equals(System.getProperty("sniffnet.debug"));
-        long nullCount = 0;
-        long parseFailCount = 0;
-        long acceptedCount = 0;
-        long byteCount = 0;
+        CaptureStats stats = new CaptureStats();
         if (debug) {
             System.err.println("[debug] capture loop starting, dlt=" + dlt + " handle.isOpen=" + handle.isOpen());
         }
@@ -201,83 +211,111 @@ public final class CaptureEngine {
                     if (offline) {
                         break;
                     }
-                    lastError = e.getMessage();
-                    System.err.println("capture error: " + e.getMessage());
-                    sleepQuietly(100);
+                    recordCaptureError(e, e.getMessage());
                     continue;
                 } catch (Exception e) {
-                    lastError = e.getClass().getSimpleName() + ": " + e.getMessage();
-                    System.err.println("capture error: " + e.getMessage());
-                    sleepQuietly(100);
+                    recordCaptureError(e, e.getClass().getSimpleName() + ": " + e.getMessage());
                     continue;
                 }
                 if (pp == null) {
                     if (offline) {
                         break;
                     }
-                    nullCount++;
-                    if (debug && nullCount <= 3) {
-                        System.err.println("[debug] getNextPacket() returned null #" + nullCount);
-                    }
-                    updateDropped();
+                    onNullPacket(stats, debug);
                     continue;
                 }
-                byte[] raw = pp.getRawData();
-                ParsedPacket parsed = PacketParser.parse(
-                        raw, dlt, toMicros(handle.getTimestamp()));
-                if (parsed != null) {
-                    acceptedCount++;
-                    byteCount += parsed.lengthBytes;
-                    consumer.accept(parsed);
-                    if (debug && acceptedCount <= 5) {
-                        System.err.println("[debug] packet #" + acceptedCount
-                                + " rawLen=" + raw.length
-                                + " parsedLen=" + parsed.lengthBytes
-                                + " proto=" + parsed.protocol
-                                + " src=" + parsed.srcIp
-                                + " dst=" + parsed.dstIp
-                                + " dlt=" + dlt);
-                    }
-                } else {
-                    parseFailCount++;
-                    if (debug && parseFailCount <= 5) {
-                        StringBuilder hex = new StringBuilder();
-                        int n = Math.min(40, raw.length);
-                        for (int i = 0; i < n; i++) hex.append(String.format("%02X", raw[i]));
-                        System.err.println("[debug] parse returned null #" + parseFailCount
-                                + " rawLen=" + raw.length
-                                + " dlt=" + dlt
-                                + " hex=" + hex);
-                    }
-                }
-                if (debug && (acceptedCount + parseFailCount) % 1000 == 0) {
-                    System.err.println("[debug] stats: accepted=" + acceptedCount
-                            + " parseFail=" + parseFailCount + " nullTimeouts=" + nullCount
-                            + " bytes=" + byteCount);
-                }
-                if (dumper != null) {
-                    try {
-                        dumper.dump(pp);
-                    } catch (Exception e) {
-                        lastError = e.getMessage();
-                    }
-                }
+                processPacket(pp, consumer, stats, debug);
             }
         } finally {
-            if (debug) {
-                System.err.println("[debug] capture loop exiting: accepted=" + acceptedCount
-                        + " parseFail=" + parseFailCount + " nullTimeouts=" + nullCount
-                        + " bytes=" + byteCount);
-            }
-            try {
-                updateDropped();
-            } catch (Exception ignored) {
-                // ignore
-            }
-            cleanup();
-            finished = true;
-            running = false;
+            finishCapture(stats, debug);
         }
+    }
+
+    private void recordCaptureError(Exception e, String errorText) {
+        lastError = errorText;
+        System.err.println("capture error: " + e.getMessage());
+        sleepQuietly();
+    }
+
+    private void onNullPacket(CaptureStats stats, boolean debug) {
+        stats.nullCount++;
+        if (debug && stats.nullCount <= 3) {
+            System.err.println("[debug] getNextPacket() returned null #" + stats.nullCount);
+        }
+        updateDropped();
+    }
+
+    private void processPacket(
+            Packet pp, PacketConsumer consumer, CaptureStats stats, boolean debug) {
+
+        byte[] raw = pp.getRawData();
+        ParsedPacket parsed = PacketParser.parse(raw, dlt, toMicros(handle.getTimestamp()));
+        if (parsed != null) {
+            stats.acceptedCount++;
+            stats.byteCount += parsed.lengthBytes;
+            consumer.accept(parsed);
+            if (debug && stats.acceptedCount <= 5) {
+                System.err.println("[debug] packet #" + stats.acceptedCount
+                        + " rawLen=" + raw.length
+                        + " parsedLen=" + parsed.lengthBytes
+                        + " proto=" + parsed.protocol
+                        + " src=" + parsed.srcIp
+                        + " dst=" + parsed.dstIp
+                        + " dlt=" + dlt);
+            }
+        } else {
+            stats.parseFailCount++;
+            if (debug && stats.parseFailCount <= 5) {
+                StringBuilder hex = new StringBuilder();
+                int n = Math.min(40, raw.length);
+                for (int i = 0; i < n; i++) hex.append(String.format("%02X", raw[i]));
+                System.err.println("[debug] parse returned null #" + stats.parseFailCount
+                        + " rawLen=" + raw.length
+                        + " dlt=" + dlt
+                        + " hex=" + hex);
+            }
+        }
+        if (debug && (stats.acceptedCount + stats.parseFailCount) % 1000 == 0) {
+            System.err.println("[debug] stats: accepted=" + stats.acceptedCount
+                    + " parseFail=" + stats.parseFailCount + " nullTimeouts=" + stats.nullCount
+                    + " bytes=" + stats.byteCount);
+        }
+        dumpPacket(pp);
+    }
+
+    private void dumpPacket(Packet pp) {
+        if (dumper == null) {
+            return;
+        }
+        try {
+            dumper.dump(pp);
+        } catch (Exception e) {
+            lastError = e.getMessage();
+        }
+    }
+
+    private void finishCapture(CaptureStats stats, boolean debug) {
+        if (debug) {
+            System.err.println("[debug] capture loop exiting: accepted=" + stats.acceptedCount
+                    + " parseFail=" + stats.parseFailCount + " nullTimeouts=" + stats.nullCount
+                    + " bytes=" + stats.byteCount);
+        }
+        try {
+            updateDropped();
+        } catch (Exception ignored) {
+            // ignore
+        }
+        cleanup();
+        finished = true;
+        running = false;
+        endLatch.countDown();
+    }
+
+    private static final class CaptureStats {
+        long nullCount;
+        long parseFailCount;
+        long acceptedCount;
+        long byteCount;
     }
 
     private void updateDropped() {
@@ -306,11 +344,19 @@ public final class CaptureEngine {
         return ts.getTime() * 1000L + (ts.getNanos() % 1_000_000L) / 1000L;
     }
 
-    private static void sleepQuietly(long ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    /** Pause the current thread without throwing on interruption. */
+    private static void sleepQuietly() {
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(ERROR_BACKOFF_MS);
+        while (true) {
+            long remaining = deadline - System.nanoTime();
+            if (remaining <= 0) {
+                return;
+            }
+            LockSupport.parkNanos(remaining);
+            if (Thread.interrupted()) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
     }
 
