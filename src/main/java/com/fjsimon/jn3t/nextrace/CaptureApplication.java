@@ -4,6 +4,9 @@ import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureEngine;
 import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureEngineFactory;
 import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureMonitor;
 import main.java.com.fjsimon.jn3t.nextrace.capture.CaptureSession;
+import main.java.com.fjsimon.jn3t.nextrace.tracking.ConnectionTracker;
+import main.java.com.fjsimon.jn3t.nextrace.tracking.GeoLookup;
+import main.java.com.fjsimon.jn3t.nextrace.tracking.ServiceRegistry;
 import main.java.com.fjsimon.jn3t.nextrace.view.CaptureViewFactory;
 import main.java.com.fjsimon.jn3t.nextrace.view.CaptureView;
 

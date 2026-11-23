@@ -1,6 +1,13 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.tracking;
 
-import main.java.com.fjsimon.jn3t.nextrace.model.*;
+import main.java.com.fjsimon.jn3t.nextrace.model.Connection;
+import main.java.com.fjsimon.jn3t.nextrace.model.ConnectionKey;
+import main.java.com.fjsimon.jn3t.nextrace.model.HostStat;
+import main.java.com.fjsimon.jn3t.nextrace.model.SecondBucket;
+import main.java.com.fjsimon.jn3t.nextrace.model.Protocol;
+import main.java.com.fjsimon.jn3t.nextrace.model.ParsedPacket;
+import main.java.com.fjsimon.jn3t.nextrace.model.TrafficDirection;
+import main.java.com.fjsimon.jn3t.nextrace.model.Snapshot;
 
 import java.net.InetAddress;
 import java.util.ArrayList;

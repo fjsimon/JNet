@@ -1,6 +1,6 @@
 package main.java.com.fjsimon.jn3t.nextrace.capture;
 
-import main.java.com.fjsimon.jn3t.nextrace.ConnectionTracker;
+import main.java.com.fjsimon.jn3t.nextrace.tracking.ConnectionTracker;
 
 public final class CaptureSession implements AutoCloseable {
 

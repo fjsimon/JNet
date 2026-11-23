@@ -1,6 +1,6 @@
 package main.java.com.fjsimon.jn3t.nextrace.capture;
 
-import main.java.com.fjsimon.jn3t.nextrace.ConnectionTracker;
+import main.java.com.fjsimon.jn3t.nextrace.tracking.ConnectionTracker;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,6 +35,11 @@ public final class CaptureMonitor implements AutoCloseable {
         scheduler.schedule(this::diagnose, 5, TimeUnit.SECONDS);
     }
 
+    @Override
+    public void close() {
+        scheduler.shutdownNow();
+    }
+
     private void diagnose() {
 
         if (engine.isRunning()
@@ -53,10 +58,5 @@ public final class CaptureMonitor implements AutoCloseable {
             );
             System.err.println();
         }
-    }
-
-    @Override
-    public void close() {
-        scheduler.shutdownNow();
     }
 }

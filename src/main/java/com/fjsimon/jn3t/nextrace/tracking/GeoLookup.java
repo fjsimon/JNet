@@ -1,4 +1,4 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.tracking;
 
 import com.maxmind.db.Reader;
 import main.java.com.fjsimon.jn3t.nextrace.model.HostStat;
@@ -71,22 +71,6 @@ public final class GeoLookup implements HostEnricher, AutoCloseable {
         }
     }
 
-    private static Reader openResource(String path) {
-        try (InputStream in = GeoLookup.class.getResourceAsStream(path)) {
-            if (in == null) {
-                return null;
-            }
-            return new Reader(in);
-        } catch (Exception e) {
-            System.err.println("could not load MMDB " + path + ": " + e.getMessage());
-            return null;
-        }
-    }
-
-    public boolean enabled() {
-        return enabled;
-    }
-
     @Override
     public void enrich(HostStat host) {
         if (!enabled) {
@@ -96,6 +80,42 @@ public final class GeoLookup implements HostEnricher, AutoCloseable {
             executor.execute(() -> lookup(host));
         } catch (java.util.concurrent.RejectedExecutionException ignored) {
             // executor shut down while capture is still draining
+        }
+    }
+
+    @Override
+    public void close() throws Exception {
+        executor.shutdown();
+
+        try {
+            if (!executor.awaitTermination(
+                    SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+
+                executor.shutdownNow();
+
+                // Wait for interrupted tasks to finish before closing readers.
+                executor.awaitTermination(
+                        SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS
+                );
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        } finally {
+            closeQuietly(asnReader);
+            closeQuietly(countryReader);
+        }
+    }
+
+    private static Reader openResource(String path) {
+        try (InputStream in = GeoLookup.class.getResourceAsStream(path)) {
+            if (in == null) {
+                return null;
+            }
+            return new Reader(in);
+        } catch (Exception e) {
+            System.err.println("could not load MMDB " + path + ": " + e.getMessage());
+            return null;
         }
     }
 
@@ -123,46 +143,6 @@ public final class GeoLookup implements HostEnricher, AutoCloseable {
             }
         } catch (Throwable e) {
             System.err.println("[geo-lookup] ip=" + host.ip + " error: " + e.getMessage());
-        }
-    }
-
-    public void shutdown() {
-        executor.shutdown();
-        if (asnReader != null) {
-            try {
-                asnReader.close();
-            } catch (IOException ignored) {
-            }
-        }
-        if (countryReader != null) {
-            try {
-                countryReader.close();
-            } catch (IOException ignored) {
-            }
-        }
-    }
-
-    @Override
-    public void close() throws Exception {
-        executor.shutdown();
-
-        try {
-            if (!executor.awaitTermination(
-                    SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-
-                executor.shutdownNow();
-
-                // Wait for interrupted tasks to finish before closing readers.
-                executor.awaitTermination(
-                        SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS
-                );
-            }
-        } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        } finally {
-            closeQuietly(asnReader);
-            closeQuietly(countryReader);
         }
     }
 }
