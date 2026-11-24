@@ -1,4 +1,4 @@
-package main.java.com.fjsimon.jn3t.nextrace;
+package main.java.com.fjsimon.jn3t.nextrace.view;
 
 import main.java.com.fjsimon.jn3t.nextrace.model.Connection;
 import main.java.com.fjsimon.jn3t.nextrace.model.HostStat;

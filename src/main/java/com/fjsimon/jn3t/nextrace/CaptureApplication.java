@@ -9,6 +9,7 @@ import main.java.com.fjsimon.jn3t.nextrace.tracking.GeoLookup;
 import main.java.com.fjsimon.jn3t.nextrace.tracking.ServiceRegistry;
 import main.java.com.fjsimon.jn3t.nextrace.view.CaptureViewFactory;
 import main.java.com.fjsimon.jn3t.nextrace.view.CaptureView;
+import main.java.com.fjsimon.jn3t.nextrace.view.Report;
 
 import java.nio.file.Path;
 import java.util.HashSet;
