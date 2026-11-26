@@ -37,8 +37,5 @@ public final class Connection {
         return txBytes + rxBytes;
     }
 
-    public long totalPackets() {
-        return txPackets + rxPackets;
-    }
 }
 
